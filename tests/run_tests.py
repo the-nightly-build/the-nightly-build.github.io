@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from network import discovery, ingest, models, serialize  # noqa: E402
+from network import discovery, ingest, models, render, serialize  # noqa: E402
 from network.crawl import crawl  # noqa: E402
 from network.http import FetchTooLarge  # noqa: E402
 
@@ -287,6 +287,53 @@ check(
     "json output is deterministic",
     serialize.presses_json(presses) == serialize.presses_json(presses)
     and serialize.search_json(editions) == serialize.search_json(editions),
+)
+
+print("== render ==")
+presses, editions, report = run_one(valid_catalog())
+home = render.render_home(presses)
+check("home lists the press card", render.profile_path(presses[0]) in home)
+check("home has a search box", 'id="net-q"' in home)
+check("home shows the trust line", render.FOOTER_LINE in home)
+check("home has an appearance toggle", "net-appearance" in home)
+check(
+    "recruiting link opens safely in a new tab",
+    'target="_blank" rel="noopener noreferrer"' in home,
+)
+prof = render.render_profile(presses[0], editions)
+check("profile links out to the real press", "Visit this press" in prof)
+check(
+    "profile edition links are external + safe",
+    prof.count('target="_blank" rel="noopener noreferrer"') >= len(editions),
+)
+check("404 renders", "Not found" in render.render_404())
+
+# Untrusted strings are escaped at the render boundary.
+evil = run_one(valid_catalog(site_title="<script>x</script>"))[0]
+check(
+    "press title is html-escaped in the directory",
+    "&lt;script&gt;" in render.render_home(evil)
+    and "<script>x" not in render.render_home(evil),
+)
+
+# Profiles cap the edition list.
+big = valid_catalog(
+    editions=[
+        {
+            "series": "docket",
+            "slug": f"e{i:02d}",
+            "title": f"Edition {i}",
+            "date": f"2026-06-{i + 1:02d}",
+            "path": f"/library/docket/e{i:02d}.html",
+        }
+        for i in range(25)
+    ]
+)
+bp, be, _ = run_one(big)
+check(
+    "profile shows at most 20 editions",
+    render.render_profile(bp[0], be).count('class="net-item"')
+    == render.PROFILE_EDITION_LIMIT,
 )
 
 print()
