@@ -63,10 +63,12 @@ class BuildReport:
             f"Blocked: {d['blocked']}",
             f"Editions indexed: {d['editions_indexed']:,}",
         ]
+        # A fork with no site (fetch failed) or no opt-in is simply not
+        # participating; only a press with a reachable but broken catalog
+        # warrants attention.
+        quiet = (models.NOT_OPTED_IN, models.CATALOG_FETCH_FAILED)
         problems = [
-            s
-            for s in self.statuses
-            if s.status == "skipped" and s.reason != models.NOT_OPTED_IN
+            s for s in self.statuses if s.status == "skipped" and s.reason not in quiet
         ]
         if problems:
             lines += ["", "## Skipped presses requiring attention"]
