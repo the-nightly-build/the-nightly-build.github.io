@@ -1,0 +1,21 @@
+# Test, lint, type-check, and format-check on every push and PR.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv run --with pyyaml python3 tests/run_tests.py
+      - run: uvx ruff check network tests build_network.py
+      - run: uvx ruff format --check network tests build_network.py
+      - run: uvx ty check network build_network.py

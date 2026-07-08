@@ -1,0 +1,54 @@
+# The crawl: rebuild the directory from public forks on a schedule and deploy
+# it to GitHub Pages. Generated indexes are never committed; the site is served
+# from the Pages artifact and is fully rebuildable from public state.
+name: build-network
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # daily 08:00 UTC; presses publish overnight
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: build-network
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Crawl and build the directory
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 build_network.py --out dist
+
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: dist }
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

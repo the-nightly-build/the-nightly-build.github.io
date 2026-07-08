@@ -144,10 +144,10 @@ def main(argv=None):
     if args.demo:
         candidates, fetch_text, forks_discovered = _demo()
     else:
-        token = os.getenv("GITHUB_TOKEN")
+        token = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
         if not token:
             sys.stderr.write(
-                "GITHUB_TOKEN is required for a real crawl (or use --demo)\n"
+                "GITHUB_TOKEN (or GH_TOKEN) is required for a real crawl (or use --demo)\n"
             )
             return 2
         candidates, fetch_text, forks_discovered = _real(token)
