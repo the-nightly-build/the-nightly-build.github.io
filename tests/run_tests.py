@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from network import discovery, ingest, models  # noqa: E402
+from network import discovery, ingest, models, serialize  # noqa: E402
 from network.crawl import crawl  # noqa: E402
 from network.http import FetchTooLarge  # noqa: E402
 
@@ -247,6 +247,47 @@ check(
 )
 merged = discovery.merge_candidates([cand("Bob")], [cand("bob")])
 check("merge dedups case-insensitively", len(merged) == 1)
+
+print("== json outputs ==")
+presses, editions, report = run_one(valid_catalog())
+pdata = json.loads(serialize.presses_json(presses))
+sdata = json.loads(serialize.search_json(editions))
+check(
+    "presses.json is a list of one press", isinstance(pdata, list) and len(pdata) == 1
+)
+check(
+    "press public fields present",
+    set(pdata[0])
+    == {
+        "id",
+        "repository",
+        "owner",
+        "title",
+        "description",
+        "url",
+        "series_count",
+        "edition_count",
+        "latest_published",
+        "stars",
+        "tags",
+    },
+    detail=str(sorted(pdata[0])),
+)
+check(
+    "presses.json omits internal fields",
+    "protocol" not in pdata[0] and "catalog_generated_at" not in pdata[0],
+)
+check("search.json carries both editions", len(sdata) == 2)
+check("search record has no full text", "text" not in sdata[0])
+check(
+    "search record links to the original edition",
+    sdata[0]["url"].endswith("/library/docket/bartz.html"),
+)
+check(
+    "json output is deterministic",
+    serialize.presses_json(presses) == serialize.presses_json(presses)
+    and serialize.search_json(editions) == serialize.search_json(editions),
+)
 
 print()
 print(f"{PASS} passed, {len(FAIL)} failed")
