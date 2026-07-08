@@ -1,0 +1,6 @@
+# Presses to include beyond direct forks of the canonical repo (for example a
+# fork of a downstream press, or a non-fork copy, which auto-discovery cannot
+# see). Each entry is looked up on GitHub for its real star count and state,
+# then validated exactly like any discovered fork: opt-in and a valid catalog
+# are still required. Entries are GitHub "owner/repo".
+repositories: []
