@@ -68,7 +68,7 @@ def protocol_status(protocol):
         return "unsupported"
     if minor < 2:
         return "unsupported"
-    if minor == 2:
+    if minor in (2, 3):
         return "ok"
     return "warn"
 
@@ -220,11 +220,23 @@ def validate_catalog_1_2(candidate, catalog):
 PROTOCOL_VALIDATORS = {"1.2": validate_catalog_1_2}
 
 
+def _normalize_catalog(catalog):
+    # Protocol 1.3 renamed the wire fields edition->article and network->
+    # directory. Alias the new names onto the ones the 1.2 validator reads so a
+    # single code path ingests both 1.2 and 1.3 catalogs during the rollout.
+    if "articles" in catalog and "editions" not in catalog:
+        catalog = {**catalog, "editions": catalog["articles"]}
+    if "directory" in catalog and "network" not in catalog:
+        catalog = {**catalog, "network": catalog["directory"]}
+    return catalog
+
+
 def ingest(candidate, catalog):
     """Route a parsed catalog to its protocol validator. Raises SkipPress."""
     status = protocol_status(catalog.get("protocol"))
     if status == "unsupported":
         raise SkipPress(models.UNSUPPORTED_PROTOCOL)
+    catalog = _normalize_catalog(catalog)
     # On a higher-but-compatible minor, validate against the newest known schema.
     validator = PROTOCOL_VALIDATORS.get(catalog.get("protocol"), validate_catalog_1_2)
     return validator(candidate, catalog)

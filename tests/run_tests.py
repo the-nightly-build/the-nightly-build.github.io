@@ -195,8 +195,9 @@ check(
 
 print("== protocol acceptance ==")
 _, _, r = run_one(valid_catalog(protocol="1.3"))
-check("1.3 accepted with a warning", r.presses_indexed == 1 and r.warnings == 1)
+check("1.3 accepted cleanly", r.presses_indexed == 1 and r.warnings == 0)
 check("protocol_status: 1.2 ok", ingest.protocol_status("1.2") == "ok")
+check("protocol_status: 1.3 ok", ingest.protocol_status("1.3") == "ok")
 check("protocol_status: 1.9 warn", ingest.protocol_status("1.9") == "warn")
 check(
     "protocol_status: 1.1 unsupported", ingest.protocol_status("1.1") == "unsupported"
