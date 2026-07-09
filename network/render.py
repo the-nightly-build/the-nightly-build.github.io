@@ -41,7 +41,7 @@ def ghost_cell():
         f'<a class="cell ghost" href="{CANONICAL}" target="_blank" '
         'rel="noopener noreferrer"><span class="ghost-plus">＋</span>'
         '<span class="ghost-title">Start your own</span>'
-        '<span class="ghost-sub">Fork the repo, run your night shift ↗</span></a>'
+        '<span class="ghost-sub">Fork the repo and ask your agent to set you up ↗</span></a>'
     )
 
 

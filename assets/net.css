@@ -49,7 +49,7 @@ a {
   font-family: var(--serif);
   font-weight: 700;
   letter-spacing: -0.025em;
-  font-size: clamp(40px, 12vw, 76px);
+  font-size: clamp(40px, 11vw, 76px);
   line-height: 0.98;
   margin: 0;
 }
@@ -83,25 +83,6 @@ a {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0 14px;
-}
-
-/* On phones the search + toggle stack: search on top, a full-width two-up
-   toggle below, so nothing runs off the edge. */
-@media (max-width: 520px) {
-  .searchbar {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .seg {
-    align-self: stretch;
-  }
-
-  .seg button {
-    flex: 1;
-    text-align: center;
-    padding: 9px 0;
-  }
 }
 
 .searchbar .field:focus-within {
