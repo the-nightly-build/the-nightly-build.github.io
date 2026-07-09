@@ -76,12 +76,32 @@ a {
 
 .searchbar .field {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0 14px;
+}
+
+/* On phones the search + toggle stack: search on top, a full-width two-up
+   toggle below, so nothing runs off the edge. */
+@media (max-width: 520px) {
+  .searchbar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .seg {
+    align-self: stretch;
+  }
+
+  .seg button {
+    flex: 1;
+    text-align: center;
+    padding: 9px 0;
+  }
 }
 
 .searchbar .field:focus-within {
