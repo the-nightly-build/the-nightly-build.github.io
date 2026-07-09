@@ -110,7 +110,7 @@ def render_404():
     body = (
         '<div class="container"><section class="hero">'
         "<h1>Not found</h1>"
-        '<p class="tag">That page is not part of the network. '
+        '<p class="tag">That page is not part of The Nightly Build. '
         '<a href="/" style="color:var(--accent)">Back to the front page →</a>'
         "</p></section></div>"
     )
