@@ -85,6 +85,20 @@ def resolve_seeds(seeds, token, *, get_json=http.get_json):
     return resolved
 
 
+def fetch_author_name(login, token, *, get_json=http.get_json):
+    """Best-effort GitHub display name for an author; fall back to the handle.
+
+    One extra API call per indexed author at build time. A failure (rate limit,
+    deleted user, no name set) quietly yields the handle, so it never blocks.
+    """
+    try:
+        user, _ = get_json(f"https://api.github.com/users/{login}", token=token)
+    except Exception:
+        return login
+    name = user.get("name")
+    return name.strip() if isinstance(name, str) and name.strip() else login
+
+
 def merge_candidates(*groups):
     """Union candidate groups, de-duplicated by case-insensitive identity."""
     seen = {}

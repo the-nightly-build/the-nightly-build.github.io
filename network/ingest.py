@@ -141,11 +141,11 @@ def validate_catalog_1_2(candidate, catalog):
         catalog["editions"], list
     ):
         raise SkipPress(models.INVALID_CATALOG)
-    if (
-        not isinstance(catalog["network"], dict)
-        or catalog["network"].get("publish") is not True
-    ):
-        raise SkipPress(models.NOT_OPTED_IN)
+    if not isinstance(catalog["network"], dict):
+        raise SkipPress(models.INVALID_CATALOG)
+    # Opt-out: a press is listed unless it explicitly set publish: false.
+    if catalog["network"].get("publish") is False:
+        raise SkipPress(models.OPTED_OUT)
     generated = _parse_generated(catalog["generated"])
     if generated is None:
         raise SkipPress(models.INVALID_CATALOG)
@@ -178,7 +178,7 @@ def validate_catalog_1_2(candidate, catalog):
                 id=f"{pid}:{series_id}/{slug}",
                 press_id=pid,
                 repository=candidate.repository,
-                press_title=title,
+                author_name=candidate.owner,
                 title=_clean_str(ed.get("title"), MAX_TITLE) or str(slug),
                 dek=_clean_str(ed.get("dek"), MAX_DEK),
                 series_id=str(series_id),
@@ -197,6 +197,7 @@ def validate_catalog_1_2(candidate, catalog):
         id=pid,
         repository=candidate.repository,
         owner=candidate.owner,
+        author_name=candidate.owner,
         title=title,
         description=_clean_str(catalog["network"].get("description"), MAX_DESC),
         url=root,

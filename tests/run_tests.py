@@ -139,10 +139,25 @@ check(
     "edition carries series + section",
     lead and lead.series_name == "Docket" and lead.section == "Law",
 )
+check("author_name defaults to the handle", p and p.author_name == "Alice")
+check("edition byline is the author", lead and lead.author_name == "Alice")
 
-print("== skip reasons ==")
+pn, en, _ = crawl(
+    [cand()],
+    blocked=[],
+    fetch_text=fetcher({ALICE_URL: json.dumps(valid_catalog())}),
+    fetch_author_name=lambda login: "Alice Cooper",
+)
+check(
+    "crawl enriches the display name on press + editions",
+    pn[0].author_name == "Alice Cooper" and en[0].author_name == "Alice Cooper",
+)
+
+print("== opt-out ==")
 _, _, r = run_one(valid_catalog(network={"publish": False}))
-check("publish false -> NOT_OPTED_IN", r.statuses[0].reason == models.NOT_OPTED_IN)
+check("publish false -> OPTED_OUT", r.statuses[0].reason == models.OPTED_OUT)
+_, _, r = run_one(valid_catalog(network={}))
+check("listed by default when publish is unset", r.presses_indexed == 1)
 _, _, r = run_one(valid_catalog(protocol="1.1"))
 check(
     "protocol 1.1 -> UNSUPPORTED_PROTOCOL",
@@ -253,34 +268,34 @@ presses, editions, report = run_one(valid_catalog())
 pdata = json.loads(serialize.presses_json(presses))
 sdata = json.loads(serialize.search_json(editions))
 check(
-    "presses.json is a list of one press", isinstance(pdata, list) and len(pdata) == 1
+    "presses.json is a list of one author", isinstance(pdata, list) and len(pdata) == 1
 )
 check(
-    "press public fields present",
+    "author public fields present",
     set(pdata[0])
     == {
-        "id",
-        "repository",
         "owner",
-        "title",
+        "author_name",
         "description",
         "url",
-        "series_count",
-        "edition_count",
-        "latest_published",
         "stars",
-        "tags",
+        "article_count",
+        "latest_published",
     },
     detail=str(sorted(pdata[0])),
 )
 check(
     "presses.json omits internal fields",
-    "protocol" not in pdata[0] and "catalog_generated_at" not in pdata[0],
+    "id" not in pdata[0] and "protocol" not in pdata[0] and "title" not in pdata[0],
 )
-check("search.json carries both editions", len(sdata) == 2)
-check("search record has no full text", "text" not in sdata[0])
+check("search.json carries both articles", len(sdata) == 2)
 check(
-    "search record links to the original edition",
+    "search record is metadata only",
+    "text" not in sdata[0] and "tags" not in sdata[0],
+)
+check("search record carries the author byline", sdata[0]["author_name"] == "Alice")
+check(
+    "search record links to the original article",
     sdata[0]["url"].endswith("/library/docket/bartz.html"),
 )
 check(
@@ -291,49 +306,36 @@ check(
 
 print("== render ==")
 presses, editions, report = run_one(valid_catalog())
-home = render.render_home(presses)
-check("home lists the press card", render.profile_path(presses[0]) in home)
-check("home has a search box", 'id="net-q"' in home)
-check("home shows the trust line", render.FOOTER_LINE in home)
-check("home has an appearance toggle", "net-appearance" in home)
+home = render.render_home(editions)
 check(
-    "recruiting link opens safely in a new tab",
-    'target="_blank" rel="noopener noreferrer"' in home,
+    "home leads with the ghost start-your-own card",
+    "Start your own" in home and render.CANONICAL in home,
 )
-prof = render.render_profile(presses[0], editions)
-check("profile links out to the real press", "Visit this press" in prof)
+check("home server-renders an article card", "Bartz v. Anthropic" in home)
+check("home shows the tagline", render.TAGLINE in home)
 check(
-    "profile edition links are external + safe",
-    prof.count('target="_blank" rel="noopener noreferrer"') >= len(editions),
+    "home has the fused search + Articles/Authors toggle",
+    'id="q"' in home and 'id="tab-articles"' in home and 'id="tab-authors"' in home,
+)
+check("home has a live count line", 'id="countline"' in home)
+check(
+    "footer is a copyright + appearance toggle",
+    "© " in home and 'class="appearance"' in home,
+)
+check(
+    "article cards link out safely",
+    home.count('target="_blank" rel="noopener noreferrer"') >= len(editions),
 )
 check("404 renders", "Not found" in render.render_404())
 
 # Untrusted strings are escaped at the render boundary.
-evil = run_one(valid_catalog(site_title="<script>x</script>"))[0]
+evil = valid_catalog()
+evil["editions"][0]["title"] = "<script>x</script>"
+_, evil_eds, _ = run_one(evil)
+ehome = render.render_home(evil_eds)
 check(
-    "press title is html-escaped in the directory",
-    "&lt;script&gt;" in render.render_home(evil)
-    and "<script>x" not in render.render_home(evil),
-)
-
-# Profiles cap the edition list.
-big = valid_catalog(
-    editions=[
-        {
-            "series": "docket",
-            "slug": f"e{i:02d}",
-            "title": f"Edition {i}",
-            "date": f"2026-06-{i + 1:02d}",
-            "path": f"/library/docket/e{i:02d}.html",
-        }
-        for i in range(25)
-    ]
-)
-bp, be, _ = run_one(big)
-check(
-    "profile shows at most 20 editions",
-    render.render_profile(bp[0], be).count('class="net-item"')
-    == render.PROFILE_EDITION_LIMIT,
+    "article title is html-escaped",
+    "&lt;script&gt;" in ehome and "<script>x" not in ehome,
 )
 
 print()

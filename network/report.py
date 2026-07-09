@@ -66,7 +66,7 @@ class BuildReport:
         # A fork with no site (fetch failed) or no opt-in is simply not
         # participating; only a press with a reachable but broken catalog
         # warrants attention.
-        quiet = (models.NOT_OPTED_IN, models.CATALOG_FETCH_FAILED)
+        quiet = (models.OPTED_OUT, models.CATALOG_FETCH_FAILED)
         problems = [
             s for s in self.statuses if s.status == "skipped" and s.reason not in quiet
         ]

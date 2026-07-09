@@ -20,17 +20,13 @@ def _iso(value):
 
 def press_to_public(press):
     return {
-        "id": press.id,
-        "repository": press.repository,
         "owner": press.owner,
-        "title": press.title,
+        "author_name": press.author_name,
         "description": press.description,
         "url": press.url,
-        "series_count": press.series_count,
-        "edition_count": press.edition_count,
-        "latest_published": _iso(press.latest_published),
         "stars": press.stars,
-        "tags": list(press.tags),
+        "article_count": press.edition_count,
+        "latest_published": _iso(press.latest_published),
     }
 
 
@@ -38,13 +34,10 @@ def edition_to_search(edition):
     return {
         "title": edition.title,
         "dek": edition.dek,
-        "tags": list(edition.tags),
-        "series": edition.series_name,
-        "section": edition.section,
-        "press": edition.press_title,
-        "repository": edition.repository,
-        "published": _iso(edition.published),
+        "section": edition.section or edition.series_name,
+        "author_name": edition.author_name,
         "reading_minutes": edition.reading_minutes,
+        "published": _iso(edition.published),
         "url": edition.url,
     }
 

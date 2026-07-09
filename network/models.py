@@ -17,7 +17,8 @@ class PressRecord:
     repository: (
         str  # GitHub full name, display casing, e.g. "RyanSaxe/the-nightly-build"
     )
-    owner: str
+    owner: str  # GitHub handle; the network identity (one fork per user)
+    author_name: str  # GitHub display name, falls back to the handle
     title: str
     description: str
     url: str  # public site root, one trailing slash
@@ -35,7 +36,7 @@ class EditionRecord:
     id: str  # "<press_id>:<series_id>/<slug>"
     press_id: str
     repository: str
-    press_title: str
+    author_name: str  # byline on the network
     title: str
     dek: str
     series_id: str
@@ -57,7 +58,7 @@ CATALOG_FETCH_FAILED = "CATALOG_FETCH_FAILED"
 CATALOG_TOO_LARGE = "CATALOG_TOO_LARGE"
 INVALID_CATALOG_JSON = "INVALID_CATALOG_JSON"
 UNSUPPORTED_PROTOCOL = "UNSUPPORTED_PROTOCOL"
-NOT_OPTED_IN = "NOT_OPTED_IN"
+OPTED_OUT = "OPTED_OUT"
 INVALID_CATALOG = "INVALID_CATALOG"
 
 SKIP_REASONS = (
@@ -66,6 +67,6 @@ SKIP_REASONS = (
     CATALOG_TOO_LARGE,
     INVALID_CATALOG_JSON,
     UNSUPPORTED_PROTOCOL,
-    NOT_OPTED_IN,
+    OPTED_OUT,
     INVALID_CATALOG,
 )

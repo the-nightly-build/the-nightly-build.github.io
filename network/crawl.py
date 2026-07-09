@@ -8,8 +8,8 @@ dictionary-backed one, so the whole pipeline runs offline.
 
 from __future__ import annotations
 
-import datetime as dt
 import json
+from dataclasses import replace
 
 from . import ingest, models
 from .http import FetchTooLarge
@@ -17,7 +17,9 @@ from .ingest import SkipPress
 from .report import BuildReport
 
 
-def crawl(candidates, *, blocked, fetch_text, forks_discovered=0):
+def crawl(
+    candidates, *, blocked, fetch_text, fetch_author_name=None, forks_discovered=0
+):
     blocked_ids = {entry.strip().lower() for entry in blocked if entry.strip()}
     report = BuildReport(forks_discovered=forks_discovered, candidates=len(candidates))
     presses = []
@@ -50,14 +52,21 @@ def crawl(candidates, *, blocked, fetch_text, forks_discovered=0):
         except SkipPress as skip:
             report.skipped(candidate.repository, skip.code)
             continue
+        # Enrich with the author's GitHub display name (one extra call per
+        # indexed author); falls back to the handle already on the records.
+        if fetch_author_name is not None:
+            name = fetch_author_name(candidate.owner)
+            if name and name != press.author_name:
+                press = replace(press, author_name=name)
+                press_editions = [replace(e, author_name=name) for e in press_editions]
         presses.append(press)
         editions.extend(press_editions)
         report.indexed(candidate.repository, len(press_editions))
 
-    # Sort stably: title ascending, then publication date descending, so ties
-    # on date fall back to title (doc §38-39). Never popularity (invariant 17).
-    presses.sort(key=lambda p: p.title.lower())
-    presses.sort(key=lambda p: p.latest_published or dt.date.min, reverse=True)
+    # Authors are ordered by GitHub stars (the directory's one popularity lens),
+    # ties broken by name; articles are strictly chronological, newest first.
+    presses.sort(key=lambda p: p.author_name.lower())
+    presses.sort(key=lambda p: p.stars, reverse=True)
     editions.sort(key=lambda e: e.title.lower())
     editions.sort(key=lambda e: e.published, reverse=True)
     return presses, editions, report
