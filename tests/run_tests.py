@@ -222,6 +222,60 @@ check("draft and dateless editions dropped", len(editions) == 1)
 p = presses[0]
 check("edition_count reflects dropped editions", p.edition_count == 1)
 
+print("== url trust ==")
+# The catalog cannot redirect a reader off the derived GitHub Pages root, and a
+# hostile edition path never leaks into an outbound link.
+hostile = valid_catalog(
+    network={
+        "publish": True,
+        "description": "Books, law, and the quiet parts of the news.",
+        "url": "https://evil.example/",
+    }
+)
+hostile["editions"] = [
+    {
+        "series": "docket",
+        "slug": "bartz",
+        "title": "Bartz v. Anthropic",
+        "date": "2026-07-07",
+        "path": "/library/docket/bartz.html",
+    },
+    {
+        "series": "docket",
+        "slug": "abs",
+        "title": "Absolute URL",
+        "date": "2026-07-06",
+        "path": "https://evil.example/x",
+    },
+    {
+        "series": "docket",
+        "slug": "trav",
+        "title": "Traversal",
+        "date": "2026-07-05",
+        "path": "/library/../../secret.html",
+    },
+    {
+        "series": "docket",
+        "slug": "query",
+        "title": "Query string",
+        "date": "2026-07-04",
+        "path": "/library/docket/x.html?to=evil",
+    },
+]
+hp, he, _ = run_one(hostile)
+check(
+    "declared catalog url ignored; press root derived from GitHub",
+    hp and hp[0].url == "https://alice.github.io/the-nightly-build/",
+    detail=str(hp[0].url if hp else None),
+)
+check(
+    "only the clean local edition path survives, rooted at the press",
+    len(he) == 1
+    and he[0].url
+    == "https://alice.github.io/the-nightly-build/library/docket/bartz.html",
+    detail=str([e.url for e in he]),
+)
+
 print("== discovery ==")
 fork = {
     "full_name": "Bob/the-nightly-build",

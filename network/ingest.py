@@ -10,6 +10,7 @@ there, and require only that it is opted in and structurally valid.
 from __future__ import annotations
 
 import datetime as dt
+import re
 
 from . import models
 from .discovery import press_id
@@ -113,11 +114,11 @@ def _parse_generated(value):
         return None
 
 
-def _press_url(catalog, candidate):
-    declared = catalog.get("network", {}).get("url")
-    if isinstance(declared, str) and declared.startswith("https://"):
-        return declared if declared.endswith("/") else declared + "/"
-    return pages_root(candidate)
+# Every edition link is the derived press root plus this exact local shape.
+# The catalog never supplies an absolute URL, and a hostile `path` (scheme,
+# traversal, query, fragment) must never leak into an outbound link, so the
+# path is validated against the slug charset the protocol already mandates.
+_EDITION_PATH = re.compile(r"^/library/[a-z0-9-]+/[a-z0-9-]+\.html$")
 
 
 def _top_tags(editions_meta):
@@ -152,7 +153,9 @@ def validate_catalog_1_2(candidate, catalog):
 
     pid = press_id(candidate.repository)
     title = _clean_str(catalog["site_title"], MAX_TITLE) or candidate.repository
-    root = _press_url(catalog, candidate)
+    # The press root is derived solely from GitHub identity; nothing the catalog
+    # says can redirect a reader off the press's own site.
+    root = pages_root(candidate)
     series_by_id = {
         s.get("id"): s for s in catalog["series"] if isinstance(s, dict) and s.get("id")
     }
@@ -168,6 +171,8 @@ def validate_catalog_1_2(candidate, catalog):
         series_id = ed.get("series")
         slug = ed.get("slug")
         if published is None or not isinstance(path, str) or not series_id or not slug:
+            continue
+        if not _EDITION_PATH.match(path):
             continue
         metas.append(ed)
         dates.append(published)
