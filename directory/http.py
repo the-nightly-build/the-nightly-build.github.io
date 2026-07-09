@@ -1,8 +1,8 @@
 """Minimal HTTP helpers over stdlib urllib (no third-party deps).
 
 Two needs: authenticated GitHub API JSON (fork listing, repo lookups) and
-plain fetches of a press's public catalog.json with a hard size ceiling. The
-size ceiling is a security control: an untrusted press must not be able to
+plain fetches of an author's public catalog.json with a hard size ceiling. The
+size ceiling is a security control: an untrusted author must not be able to
 exhaust the runner by serving an enormous catalog.
 """
 
@@ -12,7 +12,7 @@ import json
 import urllib.error
 import urllib.request
 
-USER_AGENT = "NightlyBuild-network/1.0 (+https://github.com/the-nightly-build)"
+USER_AGENT = "NightlyBuild-directory/1.0 (+https://github.com/the-nightly-build)"
 DEFAULT_TIMEOUT_S = 15
 CATALOG_MAX_BYTES = 5_000_000  # 5 MB ceiling on an untrusted catalog
 

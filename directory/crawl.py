@@ -1,8 +1,8 @@
 """Orchestrate one crawl: candidates -> fetched catalogs -> trusted records.
 
 Pure given its inputs: pass the candidate list, the blocklist, and a
-fetch_text(url) callable, and get back sorted press and edition records plus a
-build report. The real entry point injects a network fetcher; tests inject a
+fetch_text(url) callable, and get back sorted author and article records plus a
+build report. The real entry point injects a directory fetcher; tests inject a
 dictionary-backed one, so the whole pipeline runs offline.
 """
 
@@ -13,7 +13,7 @@ from dataclasses import replace
 
 from . import ingest, models
 from .http import FetchTooLarge
-from .ingest import SkipPress
+from .ingest import SkipAuthor
 from .report import BuildReport
 
 
@@ -22,8 +22,8 @@ def crawl(
 ):
     blocked_ids = {entry.strip().lower() for entry in blocked if entry.strip()}
     report = BuildReport(forks_discovered=forks_discovered, candidates=len(candidates))
-    presses = []
-    editions = []
+    authors = []
+    articles = []
 
     for candidate in candidates:
         if candidate.repository.lower() in blocked_ids:
@@ -48,25 +48,27 @@ def crawl(
         if ingest.protocol_status(catalog.get("protocol")) == "warn":
             report.warnings += 1
         try:
-            press, press_editions = ingest.ingest(candidate, catalog)
-        except SkipPress as skip:
+            author, author_articles = ingest.ingest(candidate, catalog)
+        except SkipAuthor as skip:
             report.skipped(candidate.repository, skip.code)
             continue
         # Enrich with the author's GitHub display name (one extra call per
         # indexed author); falls back to the handle already on the records.
         if fetch_author_name is not None:
             name = fetch_author_name(candidate.owner)
-            if name and name != press.author_name:
-                press = replace(press, author_name=name)
-                press_editions = [replace(e, author_name=name) for e in press_editions]
-        presses.append(press)
-        editions.extend(press_editions)
-        report.indexed(candidate.repository, len(press_editions))
+            if name and name != author.author_name:
+                author = replace(author, author_name=name)
+                author_articles = [
+                    replace(e, author_name=name) for e in author_articles
+                ]
+        authors.append(author)
+        articles.extend(author_articles)
+        report.indexed(candidate.repository, len(author_articles))
 
     # Authors are ordered by GitHub stars (the directory's one popularity lens),
     # ties broken by name; articles are strictly chronological, newest first.
-    presses.sort(key=lambda p: p.author_name.lower())
-    presses.sort(key=lambda p: p.stars, reverse=True)
-    editions.sort(key=lambda e: e.title.lower())
-    editions.sort(key=lambda e: e.published, reverse=True)
-    return presses, editions, report
+    authors.sort(key=lambda p: p.author_name.lower())
+    authors.sort(key=lambda p: p.stars, reverse=True)
+    articles.sort(key=lambda e: e.title.lower())
+    articles.sort(key=lambda e: e.published, reverse=True)
+    return authors, articles, report

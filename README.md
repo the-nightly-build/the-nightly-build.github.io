@@ -2,7 +2,7 @@
 
 The discovery directory for [The Nightly Build](https://github.com/the-nightly-build/the-nightly-build).
 It crawls published sites (forks of the canonical engine, listed by default
-unless they set `network.publish: false`), reads each one's public
+unless they set `directory.publish: false`), reads each one's public
 `catalog.json`, and publishes a static, searchable index at
 [the-nightly-build.github.io](https://the-nightly-build.github.io/).
 
@@ -18,7 +18,7 @@ is rebuilt on a schedule from public forks plus a blocklist.
 2. **Ingest** — for each, fetch `catalog.json` from its GitHub Pages URL and
    validate it (protocol, opt-out, structure). Blocked repos are never fetched.
 3. **Normalize** — escape and bound every untrusted string into typed records.
-4. **Render** — emit `presses.json` / `search.json` and a static single-page
+4. **Render** — emit `authors.json` / `search.json` and a static single-page
    site with combined article and author search.
 
 ## Development
@@ -27,7 +27,7 @@ Python 3.10+ with one dependency (PyYAML). No build step for the crawler.
 
 ```sh
 python3 tests/run_tests.py       # crawler + render tests, fully offline
-python3 build_network.py --help  # crawl and build the site
+python3 build_directory.py --help  # crawl and build the site
 ```
 
 ## Moderation

@@ -1,4 +1,4 @@
-/* The Nightly Build Network — color tokens, shared with the engine theme
+/* The Nightly Build Directory — color tokens, shared with the engine theme
    ("the lamp is always warm"). Base tokens are LIGHT: light is the fallback for
    every degraded case (no JS, no media query, print). Dark applies only when
    the system asks (auto) or the reader forces it. */

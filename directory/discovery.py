@@ -1,7 +1,7 @@
-"""Discover candidate presses: direct forks of the canonical repo, plus seeds.
+"""Discover candidate authors: direct forks of the canonical repo, plus seeds.
 
 V1 discovery is exactly the repositories GitHub returns from the canonical
-repo's fork-listing endpoint (doc §16). A fork of a downstream press, or a
+repo's fork-listing endpoint (doc §16). A fork of a downstream author, or a
 manually copied repo, is invisible to auto-discovery, so a small seed list
 (moderation/seeds.yaml) covers those gaps by naming repos explicitly.
 """
@@ -25,7 +25,7 @@ class Candidate:
     stars: int
 
 
-def press_id(repository):
+def author_id(repository):
     # Case-insensitive identity; display casing is kept on the record itself.
     return f"github:{repository.lower()}"
 
@@ -104,5 +104,5 @@ def merge_candidates(*groups):
     seen = {}
     for group in groups:
         for candidate in group:
-            seen.setdefault(press_id(candidate.repository), candidate)
+            seen.setdefault(author_id(candidate.repository), candidate)
     return list(seen.values())

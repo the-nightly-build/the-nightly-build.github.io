@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Network crawler test suite, zero framework, fully offline.
+"""Directory crawler test suite, zero framework, fully offline.
 
 The whole pipeline (discovery -> fetch -> validate -> normalize -> report) runs
 against injected fork lists and a dictionary-backed catalog fetcher, so no test
-touches the network.
+touches the directory.
 
 Run: python3 tests/run_tests.py
 """
@@ -15,9 +15,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from network import discovery, ingest, models, render, serialize  # noqa: E402
-from network.crawl import crawl  # noqa: E402
-from network.http import FetchTooLarge  # noqa: E402
+from directory import discovery, ingest, models, render, serialize  # noqa: E402
+from directory.crawl import crawl  # noqa: E402
+from directory.http import FetchTooLarge  # noqa: E402
 
 PASS, FAIL = 0, []
 
@@ -41,7 +41,7 @@ def valid_catalog(**over):
         "generated": "2026-07-08T09:00:00Z",
         "protocol": "1.2",
         "site_title": "Alice's Nightly Build",
-        "network": {
+        "directory": {
             "publish": True,
             "description": "Books, law, and the quiet parts of the news.",
             "url": "https://alice.github.io/the-nightly-build/",
@@ -49,7 +49,7 @@ def valid_catalog(**over):
         "series": [
             {"id": "docket", "name": "Docket", "section": "Law", "mode": "open"},
         ],
-        "editions": [
+        "articles": [
             {
                 "series": "docket",
                 "slug": "bartz",
@@ -109,38 +109,38 @@ def run_one(catalog_or_text, *, candidate=None, blocked=()):
 
 
 print("== happy crawl ==")
-presses, editions, report = run_one(valid_catalog())
-check("one press indexed", len(presses) == 1 and report.presses_indexed == 1)
-check("both editions indexed", len(editions) == 2 and report.editions_indexed == 2)
-p = presses[0] if presses else None
-check("press identity normalized", p and p.id == "github:alice/the-nightly-build")
-check("press title from catalog", p and p.title == "Alice's Nightly Build")
+authors, articles, report = run_one(valid_catalog())
+check("one author indexed", len(authors) == 1 and report.authors_indexed == 1)
+check("both articles indexed", len(articles) == 2 and report.articles_indexed == 2)
+p = authors[0] if authors else None
+check("author identity normalized", p and p.id == "github:alice/the-nightly-build")
+check("author title from catalog", p and p.title == "Alice's Nightly Build")
 check(
-    "latest_published is newest edition",
+    "latest_published is newest article",
     p and p.latest_published.isoformat() == "2026-07-07",
 )
-check("edition_count counts real editions", p and p.edition_count == 2)
+check("article_count counts real articles", p and p.article_count == 2)
 check(
-    "press tags ranked by frequency",
+    "author tags ranked by frequency",
     p and p.tags == ("copyright", "fair-use"),
     detail=str(p.tags if p else None),
 )
 check("stars carried from candidate", p and p.stars == 42)
-lead = editions[0] if editions else None
-check("editions sorted newest-first", lead and lead.title == "Bartz v. Anthropic")
+lead = articles[0] if articles else None
+check("articles sorted newest-first", lead and lead.title == "Bartz v. Anthropic")
 check(
-    "edition url is absolute to the press",
+    "article url is absolute to the author",
     lead
     and lead.url
     == "https://alice.github.io/the-nightly-build/library/docket/bartz.html",
     detail=str(lead.url if lead else None),
 )
 check(
-    "edition carries series + section",
+    "article carries series + section",
     lead and lead.series_name == "Docket" and lead.section == "Law",
 )
 check("author_name defaults to the handle", p and p.author_name == "Alice")
-check("edition byline is the author", lead and lead.author_name == "Alice")
+check("article byline is the author", lead and lead.author_name == "Alice")
 
 pn, en, _ = crawl(
     [cand()],
@@ -149,15 +149,15 @@ pn, en, _ = crawl(
     fetch_author_name=lambda login: "Alice Cooper",
 )
 check(
-    "crawl enriches the display name on press + editions",
+    "crawl enriches the display name on author + articles",
     pn[0].author_name == "Alice Cooper" and en[0].author_name == "Alice Cooper",
 )
 
 print("== opt-out ==")
-_, _, r = run_one(valid_catalog(network={"publish": False}))
+_, _, r = run_one(valid_catalog(directory={"publish": False}))
 check("publish false -> OPTED_OUT", r.statuses[0].reason == models.OPTED_OUT)
-_, _, r = run_one(valid_catalog(network={}))
-check("listed by default when publish is unset", r.presses_indexed == 1)
+_, _, r = run_one(valid_catalog(directory={}))
+check("listed by default when publish is unset", r.authors_indexed == 1)
 _, _, r = run_one(valid_catalog(protocol="1.1"))
 check(
     "protocol 1.1 -> UNSUPPORTED_PROTOCOL",
@@ -169,10 +169,10 @@ check(
     r.statuses[0].reason == models.UNSUPPORTED_PROTOCOL,
 )
 cat = valid_catalog()
-del cat["editions"]
+del cat["articles"]
 _, _, r = run_one(cat)
 check(
-    "missing editions -> INVALID_CATALOG",
+    "missing articles -> INVALID_CATALOG",
     r.statuses[0].reason == models.INVALID_CATALOG,
 )
 _, _, r = run_one("{ not json")
@@ -195,7 +195,7 @@ check(
 
 print("== protocol acceptance ==")
 _, _, r = run_one(valid_catalog(protocol="1.3"))
-check("1.3 accepted cleanly", r.presses_indexed == 1 and r.warnings == 0)
+check("1.3 accepted cleanly", r.authors_indexed == 1 and r.warnings == 0)
 check("protocol_status: 1.2 ok", ingest.protocol_status("1.2") == "ok")
 check("protocol_status: 1.3 ok", ingest.protocol_status("1.3") == "ok")
 check("protocol_status: 1.9 warn", ingest.protocol_status("1.9") == "warn")
@@ -209,31 +209,31 @@ check(
 
 print("== normalization ==")
 cat = valid_catalog()
-cat["editions"][0]["title"] = "x" * 500
-cat["editions"][1]["draft"] = True
-cat["editions"].append(
+cat["articles"][0]["title"] = "x" * 500
+cat["articles"][1]["draft"] = True
+cat["articles"].append(
     {"series": "docket", "slug": "nodate", "title": "No date", "path": "/x.html"}
 )
-presses, editions, _ = run_one(cat)
+authors, articles, _ = run_one(cat)
 check(
     "overlong title truncated to bound",
-    editions and len(editions[0].title) == ingest.MAX_TITLE,
+    articles and len(articles[0].title) == ingest.MAX_TITLE,
 )
-check("draft and dateless editions dropped", len(editions) == 1)
-p = presses[0]
-check("edition_count reflects dropped editions", p.edition_count == 1)
+check("draft and dateless articles dropped", len(articles) == 1)
+p = authors[0]
+check("article_count reflects dropped articles", p.article_count == 1)
 
 print("== url trust ==")
 # The catalog cannot redirect a reader off the derived GitHub Pages root, and a
-# hostile edition path never leaks into an outbound link.
+# hostile article path never leaks into an outbound link.
 hostile = valid_catalog(
-    network={
+    directory={
         "publish": True,
         "description": "Books, law, and the quiet parts of the news.",
         "url": "https://evil.example/",
     }
 )
-hostile["editions"] = [
+hostile["articles"] = [
     {
         "series": "docket",
         "slug": "bartz",
@@ -265,12 +265,12 @@ hostile["editions"] = [
 ]
 hp, he, _ = run_one(hostile)
 check(
-    "declared catalog url ignored; press root derived from GitHub",
+    "declared catalog url ignored; author root derived from GitHub",
     hp and hp[0].url == "https://alice.github.io/the-nightly-build/",
     detail=str(hp[0].url if hp else None),
 )
 check(
-    "only the clean local edition path survives, rooted at the press",
+    "only the clean local article path survives, rooted at the author",
     len(he) == 1
     and he[0].url
     == "https://alice.github.io/the-nightly-build/library/docket/bartz.html",
@@ -319,11 +319,11 @@ merged = discovery.merge_candidates([cand("Bob")], [cand("bob")])
 check("merge dedups case-insensitively", len(merged) == 1)
 
 print("== json outputs ==")
-presses, editions, report = run_one(valid_catalog())
-pdata = json.loads(serialize.presses_json(presses))
-sdata = json.loads(serialize.search_json(editions))
+authors, articles, report = run_one(valid_catalog())
+pdata = json.loads(serialize.authors_json(authors))
+sdata = json.loads(serialize.search_json(articles))
 check(
-    "presses.json is a list of one author", isinstance(pdata, list) and len(pdata) == 1
+    "authors.json is a list of one author", isinstance(pdata, list) and len(pdata) == 1
 )
 check(
     "author public fields present",
@@ -340,7 +340,7 @@ check(
     detail=str(sorted(pdata[0])),
 )
 check(
-    "presses.json omits internal fields",
+    "authors.json omits internal fields",
     "id" not in pdata[0] and "protocol" not in pdata[0] and "title" not in pdata[0],
 )
 check("search.json carries both articles", len(sdata) == 2)
@@ -355,13 +355,13 @@ check(
 )
 check(
     "json output is deterministic",
-    serialize.presses_json(presses) == serialize.presses_json(presses)
-    and serialize.search_json(editions) == serialize.search_json(editions),
+    serialize.authors_json(authors) == serialize.authors_json(authors)
+    and serialize.search_json(articles) == serialize.search_json(articles),
 )
 
 print("== render ==")
-presses, editions, report = run_one(valid_catalog())
-home = render.render_home(editions)
+authors, articles, report = run_one(valid_catalog())
+home = render.render_home(articles)
 check(
     "home leads with the ghost start-your-own card",
     "Start your own" in home and render.CANONICAL in home,
@@ -379,13 +379,13 @@ check(
 )
 check(
     "article cards link out safely",
-    home.count('target="_blank" rel="noopener noreferrer"') >= len(editions),
+    home.count('target="_blank" rel="noopener noreferrer"') >= len(articles),
 )
 check("404 renders", "Not found" in render.render_404())
 
 # Untrusted strings are escaped at the render boundary.
 evil = valid_catalog()
-evil["editions"][0]["title"] = "<script>x</script>"
+evil["articles"][0]["title"] = "<script>x</script>"
 _, evil_eds, _ = run_one(evil)
 ehome = render.render_home(evil_eds)
 check(

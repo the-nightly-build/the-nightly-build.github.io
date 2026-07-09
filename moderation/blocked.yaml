@@ -1,4 +1,4 @@
-# Repositories excluded from the network. Reactive moderation only: a repo
+# Repositories excluded from the directory. Reactive moderation only: a repo
 # listed here is never fetched, indexed, or exposed in any public output. This
 # is the complete V1 moderation model. Entries are GitHub "owner/repo",
 # matched case-insensitively.

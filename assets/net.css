@@ -1,4 +1,4 @@
-/* The Nightly Build Network — a single decentralized front page.
+/* The Nightly Build Directory — a single decentralized front page.
    Color/type tokens come from theme.css; this file is layout only. The page is
    a hero + a fused search/scope control + one ruled card grid. It server-renders
    the Articles grid so it reads with no JavaScript; net.js hydrates the toggle,

@@ -1,8 +1,8 @@
-/* The Nightly Build Network runtime.
+/* The Nightly Build Directory runtime.
  *   1. Appearance: ◐ auto → ○ light → ● dark, persisted in localStorage.
  *   2. One page: an Articles/Authors toggle fused into the search box, a live
  *      hit count, and a ruled card grid rendered from /search.json (articles)
- *      and /presses.json (authors). Ghost "start your own" card is always first.
+ *      and /authors.json (authors). Ghost "start your own" card is always first.
  * Progressive enhancement: the Articles grid is server-rendered, so the page
  * reads with no JavaScript; this hydrates the toggle, search, and Authors view.
  */
@@ -169,7 +169,7 @@
     wide.addEventListener("change", render);
     Promise.all([
       fetch("/search.json").then(function (r) { return r.ok ? r.json() : []; }),
-      fetch("/presses.json").then(function (r) { return r.ok ? r.json() : []; }),
+      fetch("/authors.json").then(function (r) { return r.ok ? r.json() : []; }),
     ]).then(function (data) {
       articles = data[0] || [];
       authors = data[1] || [];

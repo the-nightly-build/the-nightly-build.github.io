@@ -12,7 +12,7 @@ from . import models
 
 
 @dataclass
-class PressStatus:
+class AuthorStatus:
     repository: str
     status: str  # "indexed" | "skipped" | "blocked"
     reason: str
@@ -22,56 +22,56 @@ class PressStatus:
 class BuildReport:
     forks_discovered: int = 0
     candidates: int = 0
-    presses_indexed: int = 0
-    presses_skipped: int = 0
+    authors_indexed: int = 0
+    authors_skipped: int = 0
     blocked: int = 0
-    editions_indexed: int = 0
+    articles_indexed: int = 0
     warnings: int = 0
-    statuses: list[PressStatus] = field(default_factory=list)
+    statuses: list[AuthorStatus] = field(default_factory=list)
 
-    def indexed(self, repository, edition_count):
-        self.presses_indexed += 1
-        self.editions_indexed += edition_count
-        self.statuses.append(PressStatus(repository, "indexed", models.INDEXED))
+    def indexed(self, repository, article_count):
+        self.authors_indexed += 1
+        self.articles_indexed += article_count
+        self.statuses.append(AuthorStatus(repository, "indexed", models.INDEXED))
 
     def skipped(self, repository, reason):
-        self.statuses.append(PressStatus(repository, "skipped", reason))
+        self.statuses.append(AuthorStatus(repository, "skipped", reason))
         if reason == models.BLOCKED:
             self.blocked += 1
         else:
-            self.presses_skipped += 1
+            self.authors_skipped += 1
 
     def to_dict(self):
         return {
             "forks_discovered": self.forks_discovered,
             "candidates": self.candidates,
-            "presses_indexed": self.presses_indexed,
-            "presses_skipped": self.presses_skipped,
+            "authors_indexed": self.authors_indexed,
+            "authors_skipped": self.authors_skipped,
             "blocked": self.blocked,
-            "editions_indexed": self.editions_indexed,
+            "articles_indexed": self.articles_indexed,
             "warnings": self.warnings,
         }
 
     def to_markdown(self):
         d = self.to_dict()
         lines = [
-            "# Network Build",
+            "# Directory Build",
             f"Forks discovered: {d['forks_discovered']}",
             f"Candidates (forks + seeds): {d['candidates']}",
-            f"Presses indexed: {d['presses_indexed']}",
-            f"Presses skipped: {d['presses_skipped']}",
+            f"Authors indexed: {d['authors_indexed']}",
+            f"Authors skipped: {d['authors_skipped']}",
             f"Blocked: {d['blocked']}",
-            f"Editions indexed: {d['editions_indexed']:,}",
+            f"Articles indexed: {d['articles_indexed']:,}",
         ]
         # A fork with no site (fetch failed) or no opt-in is simply not
-        # participating; only a press with a reachable but broken catalog
+        # participating; only an author with a reachable but broken catalog
         # warrants attention.
         quiet = (models.OPTED_OUT, models.CATALOG_FETCH_FAILED)
         problems = [
             s for s in self.statuses if s.status == "skipped" and s.reason not in quiet
         ]
         if problems:
-            lines += ["", "## Skipped presses requiring attention"]
+            lines += ["", "## Skipped authors requiring attention"]
             lines += [f"{s.repository} - {s.reason}" for s in problems]
         indexed = [s.repository for s in self.statuses if s.status == "indexed"]
         if indexed:

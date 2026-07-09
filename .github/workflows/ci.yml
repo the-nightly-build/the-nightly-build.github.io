@@ -16,6 +16,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv run --with pyyaml python3 tests/run_tests.py
-      - run: uvx ruff check network tests build_network.py
-      - run: uvx ruff format --check network tests build_network.py
-      - run: uvx --with pyyaml ty check network build_network.py
+      - run: uvx ruff check directory tests build_directory.py
+      - run: uvx ruff format --check directory tests build_directory.py
+      - run: uvx --with pyyaml ty check directory build_directory.py

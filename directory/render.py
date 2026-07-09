@@ -2,7 +2,7 @@
 
 The Articles grid is server-rendered so the page reads with no JavaScript;
 net.js hydrates the Articles/Authors toggle, live search, and the Authors view
-from presses.json / search.json. There are no per-author or search sub-pages —
+from authors.json / search.json. There are no per-author or search sub-pages —
 every card links out to the real article or the author's own site. Untrusted
 strings are HTML-escaped here at the trust boundary.
 """
@@ -16,7 +16,7 @@ from html import escape as esc
 from . import serialize
 
 CANONICAL = "https://github.com/the-nightly-build/the-nightly-build"
-NETWORK_TITLE = "The Nightly Build"
+DIRECTORY_TITLE = "The Nightly Build"
 TAGLINE = "A decentralized, AI-generated newspaper."
 FOOTER = "The Nightly Build"
 
@@ -45,16 +45,16 @@ def ghost_cell():
     )
 
 
-def article_cell(edition):
-    kicker = edition.section or edition.series_name
-    dek = f'<p class="dek">{esc(edition.dek)}</p>' if edition.dek else ""
+def article_cell(article):
+    kicker = article.section or article.series_name
+    dek = f'<p class="dek">{esc(article.dek)}</p>' if article.dek else ""
     return (
-        f'<a class="cell" href="{esc(edition.url)}" target="_blank" '
+        f'<a class="cell" href="{esc(article.url)}" target="_blank" '
         f'rel="noopener noreferrer"><span class="eyebrow">{esc(kicker)}</span>'
-        f"<h3>{esc(edition.title)}</h3>{dek}"
-        f'<div class="cardfoot"><span class="left">{esc(edition.author_name)}</span>'
-        f'<span class="right">{edition.reading_minutes} min · '
-        f"{_nice_date(edition.published)}</span></div></a>"
+        f"<h3>{esc(article.title)}</h3>{dek}"
+        f'<div class="cardfoot"><span class="left">{esc(article.author_name)}</span>'
+        f'<span class="right">{article.reading_minutes} min · '
+        f"{_nice_date(article.published)}</span></div></a>"
     )
 
 
@@ -64,7 +64,7 @@ def page(body):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{esc(NETWORK_TITLE)}</title>
+<title>{esc(DIRECTORY_TITLE)}</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="{FONTS}" rel="stylesheet">
 <link rel="stylesheet" href="/assets/theme.css">
@@ -81,10 +81,10 @@ def page(body):
 </body></html>"""
 
 
-def render_home(editions):
-    count = len(editions)
-    cells = ghost_cell() + "".join(article_cell(e) for e in editions)
-    if not editions:
+def render_home(articles):
+    count = len(articles)
+    cells = ghost_cell() + "".join(article_cell(e) for e in articles)
+    if not articles:
         cells = ghost_cell()
     body = (
         '<div class="container">'
@@ -123,15 +123,15 @@ def _write(path, text):
         fh.write(text)
 
 
-def write_site(out, presses, editions, report, *, assets_dir, generated):
+def write_site(out, authors, articles, report, *, assets_dir, generated):
     """Emit the single-page site + JSON outputs into `out`."""
-    _write(os.path.join(out, "index.html"), render_home(editions))
+    _write(os.path.join(out, "index.html"), render_home(articles))
     _write(os.path.join(out, "404.html"), render_404())
-    _write(os.path.join(out, "presses.json"), serialize.presses_json(presses))
-    _write(os.path.join(out, "search.json"), serialize.search_json(editions))
+    _write(os.path.join(out, "authors.json"), serialize.authors_json(authors))
+    _write(os.path.join(out, "search.json"), serialize.search_json(articles))
     _write(
-        os.path.join(out, "network.json"),
-        serialize.network_json(report, generated=generated),
+        os.path.join(out, "directory.json"),
+        serialize.directory_json(report, generated=generated),
     )
     dest = os.path.join(out, "assets")
     os.makedirs(dest, exist_ok=True)

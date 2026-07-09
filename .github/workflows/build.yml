@@ -1,7 +1,7 @@
 # The crawl: rebuild the directory from public forks on a schedule and deploy
 # it to GitHub Pages. Generated indexes are never committed; the site is served
 # from the Pages artifact and is fully rebuildable from public state.
-name: build-network
+name: build-directory
 
 on:
   schedule:
@@ -14,7 +14,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: build-network
+  group: build-directory
   cancel-in-progress: true
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
       - name: Crawl and build the directory
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 build_network.py --out dist
+        run: python3 build_directory.py --out dist
 
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
