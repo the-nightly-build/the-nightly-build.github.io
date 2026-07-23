@@ -23,16 +23,20 @@ is rebuilt on a schedule from public forks plus a blocklist.
 
 ## Development
 
-Python 3.10+ with one dependency (PyYAML). No build step for the crawler.
+The project uses Python 3.10+ and [uv](https://docs.astral.sh/uv/). Run the
+offline test suite and build a demo directory with:
 
 ```sh
-python3 tests/run_tests.py       # crawler + render tests, fully offline
-python3 build_directory.py --help  # crawl and build the site
+uv run --with pyyaml python3 tests/run_tests.py
+uv run build_directory.py --demo --out dist
 ```
+
+A real crawl uses the same command without `--demo` and requires `GITHUB_TOKEN`
+or `GH_TOKEN`. The `build-directory` workflow runs that crawl daily and deploys
+the generated `dist/` artifact to GitHub Pages. Generated files are never
+committed.
 
 ## Moderation
 
 - `moderation/blocked.yaml` — repositories excluded from the directory.
 - `moderation/seeds.yaml` — sites to include beyond direct forks.
-
-MIT licensed.
