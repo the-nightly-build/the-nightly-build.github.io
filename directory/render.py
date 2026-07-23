@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import shutil
 from html import escape as esc
 
 from . import serialize
@@ -29,6 +30,14 @@ APPEARANCE_BOOTSTRAP = (
     "<script>try{var m=localStorage.getItem('nb-appearance');"
     "if(m==='light'||m==='dark')"
     "document.documentElement.setAttribute('data-mode',m);}catch(e){}</script>"
+)
+SITE_ASSETS = (
+    "theme.css",
+    "net.css",
+    "net.js",
+    "favicon-32.png",
+    "favicon-64.png",
+    "apple-touch-icon.png",
 )
 
 
@@ -65,6 +74,9 @@ def page(body):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{esc(DIRECTORY_TITLE)}</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="{FONTS}" rel="stylesheet">
 <link rel="stylesheet" href="/assets/theme.css">
@@ -135,6 +147,5 @@ def write_site(out, authors, articles, report, *, assets_dir, generated):
     )
     dest = os.path.join(out, "assets")
     os.makedirs(dest, exist_ok=True)
-    for name in ("theme.css", "net.css", "net.js"):
-        with open(os.path.join(assets_dir, name), encoding="utf-8") as src:
-            _write(os.path.join(dest, name), src.read())
+    for name in SITE_ASSETS:
+        shutil.copyfile(os.path.join(assets_dir, name), os.path.join(dest, name))

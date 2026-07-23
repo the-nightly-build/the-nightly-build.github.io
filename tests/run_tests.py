@@ -12,6 +12,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -374,6 +375,12 @@ check(
 )
 check("home has a live count line", 'id="countline"' in home)
 check(
+    "pages declare the complete favicon set",
+    'href="/assets/favicon-32.png"' in home
+    and 'href="/assets/favicon-64.png"' in home
+    and 'href="/assets/apple-touch-icon.png"' in home,
+)
+check(
     "footer is a copyright + appearance toggle",
     "© " in home and 'class="appearance"' in home,
 )
@@ -382,6 +389,24 @@ check(
     home.count('target="_blank" rel="noopener noreferrer"') >= len(articles),
 )
 check("404 renders", "Not found" in render.render_404())
+
+with tempfile.TemporaryDirectory() as out:
+    assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
+    render.write_site(
+        out,
+        authors,
+        articles,
+        report,
+        assets_dir=assets_dir,
+        generated="2026-07-23T00:00:00Z",
+    )
+    check(
+        "site build copies every favicon asset",
+        all(
+            os.path.isfile(os.path.join(out, "assets", name))
+            for name in ("favicon-32.png", "favicon-64.png", "apple-touch-icon.png")
+        ),
+    )
 
 # Untrusted strings are escaped at the render boundary.
 evil = valid_catalog()
